@@ -1,5 +1,5 @@
 The plots I think might be good to have (add yours if you think it will be benefitial)
-1. map showing geographical distribution of companies
+1. ~~map showing geographical distribution of companies~~
 2. team sizes violin plot
 3. ~~bar plot of batches and company count with annotated logos~~
 4. network plot to ilustrate the connections between founders and their prior companies
