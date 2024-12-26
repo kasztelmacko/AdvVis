@@ -5,6 +5,7 @@ library("grid")
 library("tidyr")
 library("treemapify")
 library("patchwork")
+library("maps")
 
 companies <- read.csv("data/companies.csv")
 badges <- read.csv("data/badges.csv")
@@ -15,7 +16,7 @@ regions <- read.csv("data/regions.csv")
 schools <- read.csv("data/schools.csv")
 tags <- read.csv("data/tags.csv")
 
-orange_palette <- colorRampPalette(c("#FD5612", "#FEF5EF"))
+orange_palette <- colorRampPalette(c("#FEF5EF", "#FD5612"))
 
 custom_theme <- theme(
   plot.background = element_rect(fill = "white"), # White background for the entire plot
@@ -195,3 +196,48 @@ p <- ggplot(df, aes(x = x, y = y, fill = Categories)) +
     axis.line = element_blank()
   )
 p
+
+##################################################################################
+# map of company origins
+##################################################################################
+
+company_counts <- regions %>%
+  group_by(country) %>%
+  summarise(n_companies = n(), .groups = 'drop')
+
+map_data <- map_data("world") %>%
+  left_join(company_counts, by = c("region" = "country"))
+
+p <- ggplot(map_data, aes(x = long, y = lat, group = group, fill = n_companies)) +
+  geom_polygon(color = "black") +
+  scale_fill_gradientn(colors = orange_palette(10), na.value = "white") +
+  labs(title = "Number of Companies by Country",
+       fill = "Number of Companies") +
+  guides(fill = guide_colorbar(
+    direction = "horizontal",
+    barwidth = unit(5, "cm"),
+    barheight = unit(0.3, "cm"),
+    title.position = "top",
+    title.hjust = 0.5
+  )) +
+  theme(
+    axis.text = element_blank(),
+    axis.title = element_blank(),
+    axis.ticks = element_blank(),
+    panel.grid = element_blank(),
+    legend.position = c(0.25, 0.2),
+    legend.justification = c(1, 0),
+    legend.background = element_rect(fill = "white", color = "gray19"),
+    plot.title = element_text(hjust = 0.5, size = 16, face = "bold")
+  )
+p
+
+
+
+
+
+
+
+
+
+
