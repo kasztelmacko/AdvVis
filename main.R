@@ -6,6 +6,7 @@ library("tidyr")
 library("treemapify")
 library("patchwork")
 library("maps")
+library("ggridges")
 
 companies <- read.csv("data/companies.csv")
 badges <- read.csv("data/badges.csv")
@@ -30,7 +31,7 @@ custom_theme <- theme(
   legend.text = element_text(color = "gray19"), # Black legend text
   legend.title = element_text(color = "gray19"), # Black legend title
   axis.line = element_line(color = "lightgray"), # Light gray axis lines (tick lines)
-  axis.ticks = element_line(color = "lightgray") # Light gray axis ticks
+  axis.ticks = element_line(color = "lightgray"), # Light gray axis ticks
 )
 
 # the batches represent Winter (W) and Summer (S) and year (number)
@@ -232,12 +233,25 @@ p <- ggplot(map_data, aes(x = long, y = lat, group = group, fill = n_companies))
   )
 p
 
+##################################################################################
+# violin plot of comapny size
+##################################################################################
 
+filtered_data <- companies %>%
+  filter(status != "Inactive", teamSize != 0)
 
+median_data <- median_data %>%
+  mutate(status_numeric = as.numeric(factor(status)))
 
-
-
-
-
-
-
+p <- ggplot(filtered_data, aes(x = log(teamSize), y = status, fill = status)) +
+  geom_density_ridges(alpha = 0.7) +
+  scale_fill_manual(values = orange_palette(length(unique(filtered_data$status)))) +
+  labs(title = "Log Team Size by Company Status",
+       x = "Log Team Size") +
+  custom_theme +
+  theme(axis.title.y = element_blank()) +
+  geom_text(data = median_data, 
+            aes(x = max(log(filtered_data$teamSize)), y = status_numeric, 
+                label = paste("Median:", round(median_teamSize, 2))), 
+            hjust = 1.1, vjust = -1, color = "gray19", size = 5.5)
+p
