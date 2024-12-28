@@ -7,6 +7,7 @@ library("treemapify")
 library("patchwork")
 library("maps")
 library("ggridges")
+library("ggalluvial")
 
 companies <- read.csv("data/companies.csv")
 badges <- read.csv("data/badges.csv")
@@ -255,3 +256,53 @@ p <- ggplot(filtered_data, aes(x = log(teamSize), y = status, fill = status)) +
                 label = paste("Median:", round(median_teamSize, 2))), 
             hjust = 1.1, vjust = -1, color = "gray19", size = 5.5)
 p
+
+##################################################################################
+# sankey plots of schools and previous companies
+##################################################################################
+
+data <- founders %>%
+  left_join(companies, by = c("company_slug" = "slug")) %>%
+  left_join(prior_companies, by = "hnid") %>%
+  left_join(schools, by = "hnid")
+
+data <- data %>%
+  mutate(
+    school = case_when(
+      school == "Massachusetts Institute of Technology" ~ "MIT",
+      school == "University of California, Berkeley" ~ "University of California",
+      TRUE ~ school
+    )
+  )
+
+top_schools <- data %>%
+  group_by(school) %>%
+  summarise(count = n(), .groups = 'drop') %>%
+  arrange(desc(count)) %>%
+  head(5)
+
+top_companies <- data %>%
+  group_by(company) %>%
+  summarise(count = n(), .groups = 'drop') %>%
+  arrange(desc(count)) %>%
+  head(5)
+
+sankey_data <- data %>%
+  filter(school %in% top_schools$school & company %in% top_companies$company) %>%
+  select(school, company, status)
+
+aggregated_data <- sankey_data %>%
+  group_by(school, company, status) %>%
+  summarise(count = n(), .groups = 'drop')
+
+ggplot(aggregated_data,
+       aes(axis1 = school, axis2 = company, axis3 = status, y = count)) +
+  geom_alluvium(aes(fill = "grey"), color = "#FD5612", width = 1/12) +
+  geom_stratum(width = 10/25, fill = "#FEF5EF", color = "black") +
+  geom_text(
+    stat = "stratum", 
+    aes(label = after_stat(stratum)),
+    size = 3
+  ) +  
+  theme_void() +
+  theme(legend.position = "none")
