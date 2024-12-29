@@ -8,6 +8,7 @@ library("patchwork")
 library("maps")
 library("ggridges")
 library("ggalluvial")
+library("gganimate")
 
 companies <- read.csv("data/companies.csv")
 badges <- read.csv("data/badges.csv")
@@ -306,3 +307,40 @@ ggplot(aggregated_data,
   ) +  
   theme_void() +
   theme(legend.position = "none")
+
+##################################################################################
+# trends plot of new technologies
+##################################################################################
+
+combined_data <- companies %>%
+  left_join(industries, by = "id") %>%
+  mutate(batch_date = as.Date(paste0(batch_date, "-01"), format = "%m-%Y-%d"))
+
+filtered_data <- combined_data %>%
+  filter(!is.na(industry) & !industry %in% c("B2B", "Consumer"))
+
+cumulative_counts <- filtered_data %>%
+  group_by(industry, batch_date) %>%
+  summarise(count = n(), .groups = 'drop') %>%
+  arrange(batch_date) %>%
+  group_by(industry) %>%
+  mutate(cumulative_count = cumsum(count)) %>%
+  ungroup()
+
+p <- cumulative_counts %>%
+  ggplot(aes(x = cumulative_count, y = reorder(industry, cumulative_count), fill = industry)) +
+  geom_bar(stat = "identity") +
+  geom_text(
+    data = . %>% group_by(batch_date) %>% arrange(desc(cumulative_count)) %>% slice_head(n = 10),
+    aes(label = sprintf("%d", round(cumulative_count))), hjust = -0.2, size = 3, color = "gray19"
+  ) +
+  labs(title = 'Number of companies from based on Industries | {frame_time}',
+       x = 'Cumulative Count',
+       y = NULL) +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  scale_fill_manual(values = orange_palette(n = length(unique(cumulative_counts$industry)))) +
+  transition_time(batch_date) +
+  ease_aes('cubic-in-out')
+
+animate(p, nframes = 100, fps = 10, width = 800, height = 600)
