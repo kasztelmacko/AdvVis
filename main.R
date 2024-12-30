@@ -9,6 +9,7 @@ library("maps")
 library("ggridges")
 library("ggalluvial")
 library("gganimate")
+library("ggimage")
 
 companies <- read.csv("data/companies.csv")
 badges <- read.csv("data/badges.csv")
@@ -61,6 +62,7 @@ dropbox_logo <- png::readPNG("images/dropbox.png")
 gitlab_logo <- png::readPNG("images/gitlab.png")
 dordash_logo <- png::readPNG("images/dordash.png")
 supabase_logo <- png::readPNG("images/supabase.png")
+docker_logo <- png::readPNG("images/docker.png")
 p <- ggplot(batch_counts, aes(x = batch_date, y = count)) +
   geom_bar(stat = "identity", fill = "#FD5612") +
   labs(
@@ -89,6 +91,9 @@ p <- p + annotation_custom(rasterGrob(dordash_logo, width = unit(1, "cm"), heigh
 p <- p + annotation_custom(rasterGrob(supabase_logo, width = unit(1, "cm"), height = unit(1, "cm")), 
                            xmin = as.Date("2020-07-01"), xmax = as.Date("2020-07-01"), 
                            ymin = 340, ymax = 390)
+p <- p + annotation_custom(rasterGrob(docker_logo, width = unit(1, "cm"), height = unit(1, "cm")), 
+                           xmin = as.Date("2010-07-01"), xmax = as.Date("2010-07-01"), 
+                           ymin = 90, ymax = 140)
 
 p <- p + geom_segment(
   aes(x = as.Date("2008-01-07"), xend = as.Date("2008-01-07"), y = 0, yend = 50),
@@ -120,6 +125,12 @@ p <- p + geom_segment(
   linetype = "dotted",
   size = 0.5
 )
+p <- p + geom_segment(
+  aes(x = as.Date("2010-07-01"), xend = as.Date("2010-07-01"), y = 0, yend = 90),
+  color = "black",
+  linetype = "dotted",
+  size = 0.5
+)
 p
 
 ##################################################################################
@@ -136,7 +147,6 @@ b2b_consumer <- industries %>%
   group_by(industry) %>%
   summarise(value = n(), .groups = 'drop')
 
-orange_palette <- colorRampPalette(c("#FD5612", "#FEF5EF"))
 colors <- orange_palette(nrow(industries_filtered))
 
 #treemap
@@ -213,7 +223,7 @@ map_data <- map_data("world") %>%
 
 p <- ggplot(map_data, aes(x = long, y = lat, group = group, fill = n_companies)) +
   geom_polygon(color = "black") +
-  scale_fill_gradientn(colors = orange_palette(10), na.value = "white") +
+  scale_fill_gradientn(colors = rev(orange_palette(10)), na.value = "white") +
   labs(title = "Number of Companies by Country",
        fill = "Number of Companies") +
   guides(fill = guide_colorbar(
@@ -236,13 +246,16 @@ p <- ggplot(map_data, aes(x = long, y = lat, group = group, fill = n_companies))
 p
 
 ##################################################################################
-# violin plot of comapny size
+# ridge plot of comapny size
 ##################################################################################
 
 filtered_data <- companies %>%
   filter(status != "Inactive", teamSize != 0)
 
-median_data <- median_data %>%
+median_data <- filtered_data %>%
+  group_by(status) %>%
+  summarise(median_teamSize = median(teamSize, na.rm = TRUE)) %>%
+  ungroup() %>%
   mutate(status_numeric = as.numeric(factor(status)))
 
 p <- ggplot(filtered_data, aes(x = log(teamSize), y = status, fill = status)) +
@@ -309,7 +322,7 @@ ggplot(aggregated_data,
   theme(legend.position = "none")
 
 ##################################################################################
-# trends plot of new technologies
+# industries gif
 ##################################################################################
 
 combined_data <- companies %>%
