@@ -216,19 +216,26 @@ p
 
 company_counts <- regions %>%
   group_by(country) %>%
-  summarise(n_companies = n(), .groups = 'drop')
+  summarise(n_companies = n(), .groups = 'drop') %>%
+  mutate(
+    country = if_else(country == "United States of America", "USA", country),
+    n_companies = pmin(n_companies, 500)  # Cap values at 500
+  )
 
 map_data <- map_data("world") %>%
   left_join(company_counts, by = c("region" = "country"))
 
+legend_breaks <- c(0, 100, 200, 300, 400, 500)
+legend_labels <- c("0", "100", "200", "300", "400", "500 and more")
+
 p <- ggplot(map_data, aes(x = long, y = lat, group = group, fill = n_companies)) +
   geom_polygon(color = "black") +
-  scale_fill_gradientn(colors = rev(orange_palette(10)), na.value = "white") +
+  scale_fill_gradientn(colors = orange_palette(10), na.value = "white", limits = c(0,500), breaks=legend_breaks, labels=legend_labels) +
   labs(title = "Number of Companies by Country",
        fill = "Number of Companies") +
   guides(fill = guide_colorbar(
     direction = "horizontal",
-    barwidth = unit(5, "cm"),
+    barwidth = unit(8, "cm"),
     barheight = unit(0.3, "cm"),
     title.position = "top",
     title.hjust = 0.5
@@ -238,9 +245,10 @@ p <- ggplot(map_data, aes(x = long, y = lat, group = group, fill = n_companies))
     axis.title = element_blank(),
     axis.ticks = element_blank(),
     panel.grid = element_blank(),
-    legend.position = c(0.25, 0.2),
+    legend.position = c(0.4, 0.15),
     legend.justification = c(1, 0),
     legend.background = element_rect(fill = "white", color = "gray19"),
+    legend.margin = margin(r=40, l=40, t=10, b=10),
     plot.title = element_text(hjust = 0.5, size = 16, face = "bold")
   )
 p
