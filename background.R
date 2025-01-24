@@ -24,6 +24,8 @@ regions <- read.csv("data/regions.csv")
 schools <- read.csv("data/schools.csv")
 tags <- read.csv("data/tags.csv")
 
+companies
+
 
 custom_theme <- theme(
   plot.background = element_rect(fill = "white"),
@@ -175,6 +177,15 @@ ggplot(industry_rankings, aes(x = year, y = rank, group = industry)) +
 ##################################################################################
 # Network Analysis and Visualization
 ##################################################################################
+
+top_10_fields <- latest_education %>% 
+  group_by(field_of_study) %>%
+  summarise(count = n(), .groups = 'drop') %>%
+  arrange(desc(count)) %>%
+  head(10) %>%
+  pull(field_of_study)
+
+top_10_fields
 
 network_data <- founders %>%
   left_join(latest_education, by = "hnid") %>%
